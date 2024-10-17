@@ -1,0 +1,18 @@
+{
+  "name": "cart461-p5js",
+  "version": "1.0.0",
+  "description": "# Starter Code for Get Started with Node.js & p5.js Starter code to set up a p5.js project to route HTTP GET requests using Node.js in the [Getting Started with Node.js tutorial](https://docs.google.com/document/d/1n6Je0Lzht2ibQmN1st1ccth47ppNhIYtMBTOwNAAFdo/edit?usp=sharing). It this tutorial, you set up the enviernment for GET requests to read file names from a local folder called <code> songs </code> and parses them into a JSON array.",
+  "main": "server.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "start": "node server.js"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "express": "^4.21.1",
+    "node-static": "^0.7.11",
+    "socket.io": "^4.8.0"
+  }
+}
