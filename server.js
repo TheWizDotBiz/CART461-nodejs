@@ -1,3 +1,4 @@
+//as the name implies, this is serverside stuff
 let express = require('express');
 const app = express();
 const server = require('http').createServer(app);
@@ -14,6 +15,18 @@ io.on('connection', (socket)=>{
   socket.on('sendMessage', function(data){
     console.log("received message " + data);
     socket.emit("serverMessage", data);
+  })
+  socket.on('updateGyroData', function(data){
+    console.log("received gyroData " + data);
+    socket.emit("serverSendGyroData", data);
+  })
+  socket.on('sendVideoImage', function(data){
+    console.log("received VideoImage from Sender " + data);
+    socket.emit("serverSendVideoImage", data);
+  })
+  socket.on('sendRawCameraFootage', function(data, data2){
+    console.log("received raw camera footage: " + data + " " + data2);
+    socket.emit("serverSendRawCameraFootage", data, data2);
   })
 })
 /*
