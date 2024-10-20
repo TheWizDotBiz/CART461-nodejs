@@ -1,8 +1,7 @@
 //this is all clientside stuff
 //todo: make video call with sounds (TWO MICS OUCHIES), send gyroscopica data (its just floats, used for movement ig)
-//todo: you need to create a whole ass different node project for the receiving end, crazy ig? idfk
-//get socket emit/receive on clients and servers pl0x
-
+//todo: video doesnt render on the receiving end for some godforsaken reason istg, gotta work on that
+//todo: https://doc-kurento.readthedocs.io/en/stable/tutorials/node/tutorial-one2one.html this might help
 //socketIo setup from big man thomas
 let io_socket = io();
 let clientSocket = io_socket.connect(); //replace url with heroku stuff i imagine
@@ -74,23 +73,15 @@ function keyInput(e){ //mostly for debugging, press e to switch clientType
   }
 
 //mediapipe webcam and obfuscation --------------------------------------------------------------------------------------------------------
-//webcam detection by thomas
-navigator.getMedia = ( navigator.getUserMedia || // use the proper vendor prefix
-  navigator.webkitGetUserMedia ||
-  navigator.mozGetUserMedia ||
-  navigator.msGetUserMedia);
-
-navigator.getMedia({video: true}, function() {
-// webcam is available
-clientType = 's';
-}, function() {
-// webcam is not available
-clientType = 'r';
-});
-
 
 //alex mediapipe stuff
 function setup() {
+  //webcam detection
+  //this doesnt work on any computer that isnt hosting the server lmao nevermind
+  clientType = 'r';
+  navigator.mediaDevices.enumerateDevices().then(result=>setClientType(result.filter(r=>r.kind=='videoinput'))); //if you get an issue about getUserMedia being not implemented to your browser, consult this: https://stackoverflow.com/questions/34197653/getusermedia-in-chrome-47-without-using-https
+  
+
   createCanvas(displayWidth, displayHeight);
   videoImage = createGraphics(displayWidth, displayHeight);
   dw = displayWidth;
@@ -100,12 +91,21 @@ function setup() {
   //videoImage.rectMode(CORNER);
 }
 
+function setClientType(data){
+  print("setClientType Data: " + data);
+  if(data.length > 0){
+    clientType = 's';
+  }else{
+    clientType = 'r';
+  }
+}
+
 function onSelfieSegmentationResults(results) {
-  print("running onSelfieSegmentationResults");
+ // print("running onSelfieSegmentationResults");
   if(clientType == 's'){
     segmentMask = results.segmentationMask; //these two used to be outside of that if statements in that function
     segmentImage = results.image;
-    clientSocket.emit("sendRawCameraFootage", segmentMask, segmentImage);
+    //clientSocket.emit("sendRawCameraFootage", segmentMask, segmentImage);
   }
 }
 
@@ -133,7 +133,7 @@ function draw() {
   switch(clientType){
     case 's':
       background(0, 255, 0);
-      print("draw s");
+    //  print("draw s");
       if (segmentImage && segmentMask) {
           videoImage.drawingContext.save();
           videoImage.drawingContext.clearRect(0, 0, displayWidth, displayHeight);
@@ -163,11 +163,12 @@ function draw() {
       displayWidth = width;
       displayHeight = (width * videoImage.height) / videoImage.width;
       image(videoImage, 0, 0, displayWidth, displayHeight); //arg 1 was videoImage
+      clientSocket.emit("sendVideoImage", videoImage);
       pop();
       //clientSocket.emit("sendVideoImage", videoImage);
       break;
     case 'r':
-      print("draw r");
+     // print("draw r");
       background(0,0,255);
       push();
       if (isFlipped) {
