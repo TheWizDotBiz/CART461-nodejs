@@ -60,7 +60,11 @@ function keyInput(e){ //mostly for debugging, press e to switch clientType
       clientType = 's';
     }
     clientSocket.emit('sendMessage', "flipping clientType to " + clientType);
-  } 
+  }
+
+  if(e.key == 't'){
+    window.location.href = 'indexReceiver.html';
+  }
 }
 
   function updateGyroscopeData(newGyroscopeData){
