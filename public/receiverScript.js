@@ -4,6 +4,10 @@ let clientSocket = io_socket.connect(); //replace url with heroku stuff i imagin
 let socketId = -1;
 
 let videoImage;
+let networkPixelArray;
+
+let WIDTH = 640;
+let HEIGHT = 480;
 
 clientSocket.on("connect", function(data){
     console.log("connected to server as a receiver");
@@ -11,17 +15,23 @@ clientSocket.on("connect", function(data){
 })
 clientSocket.on("serverSendVideoImage", function(data){
     console.log("received server videoImage " + data);
+    videoImage = data;
 })
-
+clientSocket.on('serverSendPixelArray', function(data){
+    console.log("received network pixel array " + data);
+    networkPixelArray = data;
+})
 function setup(){
-    createCanvas(displayWidth, displayHeight);
+    createCanvas(WIDTH, HEIGHT);
     background(255, 0, 0);
 }
 
 function draw(){
+    drawPixelArray();
+    /*
     if(videoImage != null){
         renderCameraFootage();
-    }
+    }*/
 }
 
 function renderCameraFootage(){
@@ -29,3 +39,9 @@ function renderCameraFootage(){
     image(videoImage, 0, 0, displayWidth, displayHeight);
 }
 
+function drawPixelArray(){
+    if(networkPixelArray != null){
+        set(networkPixelArray);
+        updatePixels(0, 0, WIDTH, HEIGHT)
+    }
+}

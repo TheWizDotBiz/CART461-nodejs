@@ -1,4 +1,4 @@
-//this is all clientside stuff
+//this is all clientside stuff for SENDER
 //todo: make video call with sounds (TWO MICS OUCHIES), send gyroscopica data (its just floats, used for movement ig)
 //todo: video doesnt render on the receiving end for some godforsaken reason istg, gotta work on that
 //todo: https://doc-kurento.readthedocs.io/en/stable/tutorials/node/tutorial-one2one.html this might help
@@ -19,6 +19,11 @@ let segmentImage;
 let videoImage;
 //mediapipe stuff that thomas shoveled in
 let networkVideoImage;
+let capture;
+let sendVideoReady = true;
+let testimg;
+let WIDTH = 640;
+let HEIGHT = 480;
 
 const videoElement = document.getElementsByClassName("input_video")[0];
 videoElement.style.display = "none";
@@ -36,12 +41,6 @@ clientSocket.on('serverMessage', function(data){
 clientSocket.on('serverSendGyroData', function(data){
   if(clientType == 'r'){
     gyroscopeData = data;
-  }
-})
-clientSocket.on('serverSendVideoImage', function(data){
-  if(clientType == 'r'){
-    //set videoImage to data
-    networkVideoImage = data;
   }
 })
 clientSocket.on("serverSendRawCameraFootage", function(data, data2){
@@ -65,169 +64,47 @@ function keyInput(e){ //mostly for debugging, press e to switch clientType
   if(e.key == 't'){
     window.location.href = 'indexReceiver.html';
   }
-}
 
-  function updateGyroscopeData(newGyroscopeData){
-    if(clientType == 's'){
-      if(newGyroscopeData != gyroscopeData){ //newGyroscopeData being this frame's gyroscope data/values
-        gyroscopeData = newGyroscopeData;
-        clientSocket.emit("updateGyroData", gyroscopeData);
-      }
-    }
-  }
-
-//mediapipe webcam and obfuscation --------------------------------------------------------------------------------------------------------
-
-//alex mediapipe stuff
-function setup() {
-  //webcam detection
-  //this doesnt work on any computer that isnt hosting the server lmao nevermind
-  clientType = 'r';
-  navigator.mediaDevices.enumerateDevices().then(result=>setClientType(result.filter(r=>r.kind=='videoinput'))); //if you get an issue about getUserMedia being not implemented to your browser, consult this: https://stackoverflow.com/questions/34197653/getusermedia-in-chrome-47-without-using-https
-  
-
-  createCanvas(displayWidth, displayHeight);
-  videoImage = createGraphics(displayWidth, displayHeight);
-  dw = displayWidth;
-  dh = displayHeight;
-  networkVideoImage = videoImage;
- // updateTimer = updateFrequency;
-  //videoImage.rectMode(CORNER);
-}
-
-function setClientType(data){
-  print("setClientType Data: " + data);
-  if(data.length > 0){
-    clientType = 's';
-  }else{
-    clientType = 'r';
+  if(e.key == 'k'){
+    loadPixels();
+    clientSocket.emit('sendPixelArray', pixels);
+    clientSocket.emit('sendMessage', "running sendVIdeo");
   }
 }
 
-function onSelfieSegmentationResults(results) {
- // print("running onSelfieSegmentationResults");
+//test
+function preload(){
+  testimg = loadImage('bigcheese.jpg');
+}
+
+function setup(){
+ clientType = 's'; //clientType is likely deprecated but whatever
+  createCanvas(WIDTH, HEIGHT);
+  capture = createCapture(VIDEO);
+  capture.hide();
+  videoImage = createImage(WIDTH, HEIGHT);
+}
+
+function draw(){
+  sendVideo();
+}
+
+function updateGyroscopeData(newGyroscopeData){
   if(clientType == 's'){
-    segmentMask = results.segmentationMask; //these two used to be outside of that if statements in that function
-    segmentImage = results.image;
-    //clientSocket.emit("sendRawCameraFootage", segmentMask, segmentImage);
+    if(newGyroscopeData != gyroscopeData){ //newGyroscopeData being this frame's gyroscope data/values
+      gyroscopeData = newGyroscopeData;
+      clientSocket.emit("updateGyroData", gyroscopeData);
+    }
   }
 }
 
-const selfieSegmentation = new SelfieSegmentation({
-  locateFile: (file) => {
-      return `https://cdn.jsdelivr.net/npm/@mediapipe/selfie_segmentation@0.1/${file}`;
-  },
-});
-
-selfieSegmentation.setOptions({
-  modelSelection: 1,
-});
-selfieSegmentation.onResults(onSelfieSegmentationResults);
-
-const camera = new Camera(videoElement, {
-  onFrame: async () => {
-      await selfieSegmentation.send({ image: videoElement });
-  },
-  width: dw,
-  height: dh,
-});
-camera.start();
-
-function draw() {
-  switch(clientType){
-    case 's':
-      background(0, 255, 0);
-    //  print("draw s");
-      if (segmentImage && segmentMask) {
-          videoImage.drawingContext.save();
-          videoImage.drawingContext.clearRect(0, 0, displayWidth, displayHeight);
-          videoImage.drawingContext.drawImage(
-              segmentMask,
-              0,
-              0,
-              displayWidth,
-              displayHeight
-          );
-          videoImage.drawingContext.globalCompositeOperation = 'source-in';
-          videoImage.drawingContext.drawImage(
-              segmentImage,
-              0,
-              0,
-              displayWidth,
-              displayHeight
-          );
-          videoImage.drawingContext.restore();
-      }
-  
-      push();
-      if (isFlipped) {
-          translate(width, 0);
-          scale(-1, 1);
-      }
-      displayWidth = width;
-      displayHeight = (width * videoImage.height) / videoImage.width;
-      image(videoImage, 0, 0, displayWidth, displayHeight); //arg 1 was videoImage
-      clientSocket.emit("sendVideoImage", videoImage);
-      pop();
-      //clientSocket.emit("sendVideoImage", videoImage);
-      break;
-    case 'r':
-     // print("draw r");
-      background(0,0,255);
-      push();
-      if (isFlipped) {
-          translate(width, 0);
-          scale(-1, 1);
-      }
-      displayWidth = width;
-      displayHeight = (width * networkVideoImage.height) / networkVideoImage.width;
-      image(networkVideoImage, 0, 0, displayWidth, displayHeight);
-      pop();
-    break;
-    default:
-      print("draw error: clientType is neither s nor r");
-    break;
-  }
-  
-//Send videoImage over network
-/*
-if(clientType == 's'){
-  if (segmentImage && segmentMask) {
-      videoImage.drawingContext.save();
-      videoImage.drawingContext.clearRect(0, 0, 1000, 1000);
-      videoImage.drawingContext.drawImage(
-          segmentMask,
-          0,
-          0,
-          displayWidth,
-          displayHeight
-      );
-      videoImage.drawingContext.globalCompositeOperation = 'source-in';
-      videoImage.drawingContext.drawImage(
-          segmentImage,
-          0,
-          0,
-          displayWidth,
-          displayHeight
-      );
-      videoImage.drawingContext.restore();
-  }
-     clientSocket.emit("sendVideoImage", videoImage);
-  }else if(clientSocket == 'r'){
-    if(networkVideoImage != null){
-      videoImage = networkVideoImage;
-    }
-  }
-
-  push();
-  if (isFlipped) {
-      translate(width, 0);
-      scale(-1, 1);
-  }
-  displayWidth = width;
-  displayHeight = (width * videoImage.height) / videoImage.width;
-  image(videoImage, 0, 0, displayWidth, displayHeight);
-  pop();
-*/
- 
+function sendVideo(){
+  rectMode(CORNERS);
+  image(capture, 0, 0, WIDTH, HEIGHT);
+  videoImage.copy(capture, 0, 0, WIDTH, HEIGHT, 0, 0, WIDTH, HEIGHT); //last two params are image width and height so change it whatever you want really
+  /*
+  //send image as pixels?
+  loadPixels();
+  clientSocket.emit('sendPixelArray', pixels);
+  clientSocket.emit('sendMessage', "running sendVIdeo");*/
 }

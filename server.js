@@ -7,6 +7,7 @@ const port = process.env.PORT || 3000;
 let static = require('node-static');
 app.use(express.static(__dirname + '/public'));
 app.use(express.static(__dirname + '/node_modules'));
+const fs = require("fs");
 server.listen(port, function() {
   console.log(`Listening on port ${port}`);
 });
@@ -27,6 +28,10 @@ io.on('connection', (socket)=>{
   socket.on('sendRawCameraFootage', function(data, data2){
     console.log("received raw camera footage: " + data + " " + data2);
     socket.emit("serverSendRawCameraFootage", data, data2);
+  })
+  socket.on('sendPixelArray', function(data){
+    console.log("received pixel array");
+    socket.emit('serverSendPixelArray', data);
   })
 })
 /*
