@@ -21,13 +21,21 @@ clientSocket.on('serverSendPixelArray', function(data){
     console.log("received network pixel array " + data);
     networkPixelArray = data;
 })
+
+let myCanvas;
+let otherStream;
 function setup(){
-    createCanvas(WIDTH, HEIGHT);
+    myCanvas = createCanvas(displayWidth, displayHeight);
     background(255, 0, 0);
+    let p5lm = new p5LiveMedia(this, "CAPTURE", myCanvas, "CART498")
+    p5lm.on('stream', gotStream);
 }
 
 function draw(){
-    drawPixelArray();
+    if(otherStream != null){
+        image(otherStream, 0,0,displayWidth, displayHeight);
+    }
+    //drawPixelArray();
     /*
     if(videoImage != null){
         renderCameraFootage();
@@ -44,4 +52,9 @@ function drawPixelArray(){
         set(networkPixelArray);
         updatePixels(0, 0, WIDTH, HEIGHT)
     }
+}
+
+function gotStream(stream, id){
+    console.log("received a stream!");
+    otherStream = stream;
 }

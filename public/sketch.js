@@ -77,16 +77,27 @@ function preload(){
   testimg = loadImage('bigcheese.jpg');
 }
 
+let myVideo;
 function setup(){
+  /*
  clientType = 's'; //clientType is likely deprecated but whatever
-  createCanvas(WIDTH, HEIGHT);
-  capture = createCapture(VIDEO);
-  capture.hide();
-  videoImage = createImage(WIDTH, HEIGHT);
+  createCanvas(displayWidth, displayHeight);
+  capture = createCapture(VIDEO, function(stream){
+    let p5lm = new p5LiveMedia(this, "CAPTURE", stream, "CART498");
+    p5lm.on('stream', gotStream);
+  });*/
+  createCanvas(displayWidth, displayHeight);
+  myVideo = createCapture(VIDEO, function(stream){
+    let p5lm = new p5LiveMedia(this, "CAPTURE", stream, "CART498");
+    p5lm.on('stream', gotStream);
+  })
+ // capture.hide();
+ // videoImage = createImage(WIDTH, HEIGHT);
 }
 
 function draw(){
-  sendVideo();
+ // sendVideo();
+ image(myVideo,0,0,displayWidth,displayHeight);
 }
 
 function updateGyroscopeData(newGyroscopeData){
@@ -99,12 +110,24 @@ function updateGyroscopeData(newGyroscopeData){
 }
 
 function sendVideo(){
+  //console.log("running sendVIdeo");
   rectMode(CORNERS);
   image(capture, 0, 0, WIDTH, HEIGHT);
   videoImage.copy(capture, 0, 0, WIDTH, HEIGHT, 0, 0, WIDTH, HEIGHT); //last two params are image width and height so change it whatever you want really
+  loadPixels();
+  console.log("sending pixels " + pixels);
+  clientSocket.emit('sendPixelArray', pixels);
+  //console.log("ran sendVideo");
   /*
   //send image as pixels?
   loadPixels();
   clientSocket.emit('sendPixelArray', pixels);
   clientSocket.emit('sendMessage', "running sendVIdeo");*/
+}
+
+let otherVideo;
+function gotStream(stream, id){
+  console.log("gotStream");
+  otherVideo = stream;
+  //image(stream, 0,0,displayWidth, displayHeight);
 }
